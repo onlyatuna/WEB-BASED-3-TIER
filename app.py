@@ -142,7 +142,7 @@ def page_main():
         window.parent.location.pathname + '?nav=' + p;
     }
     </script>
-    """, height=380, scrolling=False)
+    """, height=460, scrolling=False)
 
 # ── 共用 CRUD 頁 ─────────────────────────────────────────────
 def crud_page(title, load_fn, pk_col,
