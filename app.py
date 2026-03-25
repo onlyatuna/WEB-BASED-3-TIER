@@ -3,7 +3,7 @@ WEB-BASED 3-TIER 資料維護系統 - Streamlit 版
 Tier1: Streamlit UI  |  Tier2: Python 業務邏輯  |  Tier3: SQL Server
 """
 import streamlit as st
-import pyodbc
+import pymssql
 import pandas as pd
 
 st.set_page_config(page_title="資料維護系統", layout="wide")
@@ -14,15 +14,16 @@ st.set_page_config(page_title="資料維護系統", layout="wide")
 
 def get_conn():
     s = st.secrets["db"]
-    return pyodbc.connect(
-        f"DRIVER={{ODBC Driver 18 for SQL Server}};"
-        f"SERVER={s['server']},{s['port']};"
-        f"DATABASE={s['database']};"
-        f"UID={s['uid']};PWD={s['pwd']};"
-        f"TrustServerCertificate=yes"
+    return pymssql.connect(
+        server=s["server"],
+        port=int(s["port"]),
+        database=s["database"],
+        user=s["uid"],
+        password=s["pwd"],
     )
 
 def qry(sql, params=()):
+    # pymssql 使用 %s 佔位符
     conn = get_conn()
     try:
         return pd.read_sql(sql, conn, params=list(params) if params else None)
@@ -32,29 +33,30 @@ def qry(sql, params=()):
 def cmd(sql, params=()):
     conn = get_conn()
     try:
-        conn.execute(sql, params)
+        cursor = conn.cursor()
+        cursor.execute(sql, params)
         conn.commit()
     finally:
         conn.close()
 
 # USER
 def user_all():   return qry("SELECT userid AS 用戶代碼, username AS 用戶名稱, pwd AS 用戶密碼 FROM [user]")
-def user_ins(a,b,c): cmd("INSERT INTO [user](userid,username,pwd) VALUES(?,?,?)",(a,b,c))
-def user_upd(a,b,c): cmd("UPDATE [user] SET username=?,pwd=? WHERE userid=?",(b,c,a))
-def user_del(a):     cmd("DELETE FROM [user] WHERE userid=?",(a,))
+def user_ins(a,b,c): cmd("INSERT INTO [user](userid,username,pwd) VALUES(%s,%s,%s)",(a,b,c))
+def user_upd(a,b,c): cmd("UPDATE [user] SET username=%s,pwd=%s WHERE userid=%s",(b,c,a))
+def user_del(a):     cmd("DELETE FROM [user] WHERE userid=%s",(a,))
 
 # CUST
 def cust_all():   return qry("SELECT cust_code AS 客戶代碼, cust_name AS 客戶名稱, remark AS 備註說明 FROM cust")
-def cust_ins(a,b,c): cmd("INSERT INTO cust(cust_code,cust_name,remark) VALUES(?,?,?)",(a,b,c))
-def cust_upd(a,b,c): cmd("UPDATE cust SET cust_name=?,remark=? WHERE cust_code=?",(b,c,a))
-def cust_del(a):     cmd("DELETE FROM cust WHERE cust_code=?",(a,))
+def cust_ins(a,b,c): cmd("INSERT INTO cust(cust_code,cust_name,remark) VALUES(%s,%s,%s)",(a,b,c))
+def cust_upd(a,b,c): cmd("UPDATE cust SET cust_name=%s,remark=%s WHERE cust_code=%s",(b,c,a))
+def cust_del(a):     cmd("DELETE FROM cust WHERE cust_code=%s",(a,))
 
 # FACT
 def fact_all():   return qry("SELECT fact_code AS 廠商代碼, fact_name AS 廠商名稱, remark AS 備註說明 FROM fact")
 def fact_raw():   return qry("SELECT fact_code, fact_name FROM fact ORDER BY fact_code")
-def fact_ins(a,b,c): cmd("INSERT INTO fact(fact_code,fact_name,remark) VALUES(?,?,?)",(a,b,c))
-def fact_upd(a,b,c): cmd("UPDATE fact SET fact_name=?,remark=? WHERE fact_code=?",(b,c,a))
-def fact_del(a):     cmd("DELETE FROM fact WHERE fact_code=?",(a,))
+def fact_ins(a,b,c): cmd("INSERT INTO fact(fact_code,fact_name,remark) VALUES(%s,%s,%s)",(a,b,c))
+def fact_upd(a,b,c): cmd("UPDATE fact SET fact_name=%s,remark=%s WHERE fact_code=%s",(b,c,a))
+def fact_del(a):     cmd("DELETE FROM fact WHERE fact_code=%s",(a,))
 
 # ITEM
 def item_all():
@@ -63,9 +65,9 @@ def item_all():
                i.fact_code AS 廠商代碼, f.fact_name AS 廠商名稱
         FROM item i LEFT JOIN fact f ON i.fact_code=f.fact_code
     """)
-def item_ins(a,b,c): cmd("INSERT INTO item(item_code,item_name,fact_code) VALUES(?,?,?)",(a,b,c))
-def item_upd(a,b,c): cmd("UPDATE item SET item_name=?,fact_code=? WHERE item_code=?",(b,c,a))
-def item_del(a):     cmd("DELETE FROM item WHERE item_code=?",(a,))
+def item_ins(a,b,c): cmd("INSERT INTO item(item_code,item_name,fact_code) VALUES(%s,%s,%s)",(a,b,c))
+def item_upd(a,b,c): cmd("UPDATE item SET item_name=%s,fact_code=%s WHERE item_code=%s",(b,c,a))
+def item_del(a):     cmd("DELETE FROM item WHERE item_code=%s",(a,))
 
 # ═══════════════════════════════════════════════════════════════
 # Tier 2 – Business Logic Layer
