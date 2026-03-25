@@ -3,7 +3,6 @@ WEB-BASED 3-TIER 資料維護系統 - Streamlit 版
 Tier1: Streamlit UI  |  Tier2: Python 業務邏輯  |  Tier3: SQL Server
 """
 import streamlit as st
-import streamlit.components.v1 as components
 import pymssql
 import pandas as pd
 
@@ -106,43 +105,36 @@ def page_main():
         unsafe_allow_html=True,
     )
 
-    components.html("""
+    st.markdown("""
     <style>
-    *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-    body{background:transparent}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:560px;margin:24px auto}
-    .card{background:#fff;border-radius:10px;padding:36px 20px 32px;text-align:center;
-          box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;
-          transition:box-shadow .2s,transform .2s;border-top:5px solid}
-    .card:hover{box-shadow:0 8px 24px rgba(0,0,0,.14);transform:translateY(-4px)}
-    .card:active{transform:translateY(-1px)}
-    .icon{font-size:40px;margin-bottom:16px}
-    .en{font-size:13px;color:#999;letter-spacing:1px;font-weight:600;text-transform:uppercase}
-    .zh{font-size:17px;font-weight:700;color:#1a1a1a;margin-top:4px}
+    .card-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:560px;margin:24px auto}
+    .card-link{text-decoration:none}
+    .card-box{background:#fff;border-radius:10px;padding:36px 20px 32px;text-align:center;
+              box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;
+              transition:box-shadow .2s,transform .2s;border-top:5px solid}
+    .card-box:hover{box-shadow:0 8px 24px rgba(0,0,0,.16);transform:translateY(-4px)}
+    .card-box:active{transform:translateY(-1px)}
+    .c-icon{font-size:40px;margin-bottom:16px}
+    .c-en{font-size:13px;color:#999;letter-spacing:1px;font-weight:600}
+    .c-zh{font-size:17px;font-weight:700;color:#1a1a1a;margin-top:4px}
     .u{border-top-color:#1677ff}.c{border-top-color:#52c41a}
     .f{border-top-color:#fa8c16}.i{border-top-color:#722ed1}
     </style>
-    <div class="grid">
-      <div class="card u" onclick="go('user')">
-        <div class="icon">👤</div><div class="en">USER</div><div class="zh">用戶資料維護</div>
-      </div>
-      <div class="card c" onclick="go('cust')">
-        <div class="icon">🏢</div><div class="en">CUST</div><div class="zh">客戶資料維護</div>
-      </div>
-      <div class="card f" onclick="go('fact')">
-        <div class="icon">🏭</div><div class="en">FACT</div><div class="zh">廠商資料維護</div>
-      </div>
-      <div class="card i" onclick="go('item')">
-        <div class="icon">📦</div><div class="en">ITEM</div><div class="zh">商品資料維護</div>
-      </div>
+    <div class="card-grid">
+      <a class="card-link" href="?nav=user">
+        <div class="card-box u"><div class="c-icon">👤</div><div class="c-en">USER</div><div class="c-zh">用戶資料維護</div></div>
+      </a>
+      <a class="card-link" href="?nav=cust">
+        <div class="card-box c"><div class="c-icon">🏢</div><div class="c-en">CUST</div><div class="c-zh">客戶資料維護</div></div>
+      </a>
+      <a class="card-link" href="?nav=fact">
+        <div class="card-box f"><div class="c-icon">🏭</div><div class="c-en">FACT</div><div class="c-zh">廠商資料維護</div></div>
+      </a>
+      <a class="card-link" href="?nav=item">
+        <div class="card-box i"><div class="c-icon">📦</div><div class="c-en">ITEM</div><div class="c-zh">商品資料維護</div></div>
+      </a>
     </div>
-    <script>
-    function go(p){
-      window.parent.location.href =
-        window.parent.location.pathname + '?nav=' + p;
-    }
-    </script>
-    """, height=460, scrolling=False)
+    """, unsafe_allow_html=True)
 
 # ── 共用 CRUD 頁 ─────────────────────────────────────────────
 def crud_page(title, load_fn, pk_col,
