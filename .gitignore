@@ -1,0 +1,14 @@
+## 敏感資訊
+backend/.env
+frontend/.env
+
+## 非程式文件
+1.main/
+2.db.connect/
+3.function/
+4.testing/
+
+## 相依套件與編譯輸出
+node_modules/
+dist/
+*.log
