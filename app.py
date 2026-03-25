@@ -136,11 +136,65 @@ def page_main():
     </div>
     """, unsafe_allow_html=True)
 
-# ── 共用 CRUD 頁 ─────────────────────────────────────────────
-def crud_page(title, load_fn, pk_col,
-              add_form_fn, edit_form_fn, del_fn,
-              dialog_fn=None):
+# ── 表格樣式 ─────────────────────────────────────────────────
+TABLE_CSS = """
+<style>
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{background:#fafafa;padding:10px 12px;text-align:left;font-weight:600;
+        color:#555;border-bottom:2px solid #f0f0f0;white-space:nowrap}
+.tbl td{padding:9px 12px;border-bottom:1px solid #f5f5f5;color:#333;vertical-align:middle}
+.tbl tr:hover td{background:#fafafa}
+</style>
+"""
 
+def render_table(df, pk_col, on_edit, on_del):
+    """每列內嵌修改/刪除按鈕，對齊前端 Table + 操作欄設計"""
+    st.markdown(TABLE_CSS, unsafe_allow_html=True)
+
+    # 表頭（欄位列 + 操作欄）
+    data_cols = list(df.columns)
+    widths = [3] * len(data_cols) + [1, 1]
+    header = st.columns(widths)
+    for i, col in enumerate(data_cols):
+        header[i].markdown(f"**{col}**")
+    header[-2].markdown("**操作**")
+
+    st.divider()
+
+    # 資料列
+    for _, row in df.iterrows():
+        cols = st.columns(widths)
+        for i, col in enumerate(data_cols):
+            val = row[col]
+            cols[i].write("" if val is None else str(val))
+        with cols[-2]:
+            if st.button("修改", key=f"e_{row[pk_col]}", use_container_width=True):
+                on_edit(row.to_dict())
+        with cols[-1]:
+            if st.button("刪除", key=f"d_{row[pk_col]}", type="primary",
+                         use_container_width=True):
+                on_del(row.to_dict())
+
+# ── 刪除確認 Dialog ───────────────────────────────────────────
+@st.dialog("確認刪除")
+def del_confirm_dlg(del_fn, pk_col):
+    row = st.session_state.dlg_row
+    st.warning(f"確認刪除「**{row.get(pk_col, '')}**」？此操作無法復原。")
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("確認刪除", type="primary", use_container_width=True):
+            try:
+                del_fn(row[pk_col])
+                st.toast("刪除成功")
+                close_dlg()
+            except Exception as e:
+                st.error(str(e))
+    with c2:
+        if st.button("取消", use_container_width=True):
+            close_dlg()
+
+# ── 共用 CRUD 頁 ─────────────────────────────────────────────
+def crud_page(title, load_fn, pk_col, add_form_fn, edit_form_fn, del_fn):
     # 標題列
     hc1, hc2 = st.columns([1, 9])
     with hc1:
@@ -152,28 +206,12 @@ def crud_page(title, load_fn, pk_col,
     if st.button("＋ 新增", type="primary"):
         open_dlg("add")
 
-    # 讀取資料
+    # 資料表格（每列有修改/刪除）
     df = load_fn()
-    st.write(f"共 **{len(df)}** 筆")
-
-    # 表格 (可選列)
-    event = st.dataframe(
-        df, use_container_width=True, hide_index=True,
-        on_select="rerun", selection_mode="single-row",
-    )
-    selected = event.selection.rows
-
-    # 操作按鈕列
-    bc1, bc2, _ = st.columns([1, 1, 8])
-    with bc1:
-        edit_click = st.button("✏️ 修改", disabled=(not selected))
-    with bc2:
-        del_click  = st.button("🗑️ 刪除", disabled=(not selected), type="primary")
-
-    if selected:
-        row = df.iloc[selected[0]].to_dict()
-        if edit_click: open_dlg("edit", row)
-        if del_click:  open_dlg("del",  row)
+    st.caption(f"共 {len(df)} 筆")
+    render_table(df, pk_col,
+                 on_edit=lambda r: open_dlg("edit", r),
+                 on_del =lambda r: open_dlg("del",  r))
 
     # 彈窗
     dlg = st.session_state.dlg
@@ -182,19 +220,7 @@ def crud_page(title, load_fn, pk_col,
     elif dlg == "edit":
         edit_form_fn(st.session_state.dlg_row)
     elif dlg == "del":
-        row = st.session_state.dlg_row
-        st.warning(f"確認刪除「{row.get(pk_col, '')}」？")
-        dc1, dc2, _ = st.columns([1, 1, 8])
-        with dc1:
-            if st.button("確認刪除", type="primary"):
-                try:
-                    del_fn(row[pk_col])
-                    st.toast("刪除成功")
-                    close_dlg()
-                except Exception as e:
-                    st.error(str(e))
-        with dc2:
-            if st.button("取消"): close_dlg()
+        del_confirm_dlg(del_fn, pk_col)
 
 # ── USER ─────────────────────────────────────────────────────
 @st.dialog("用戶資料 - 新增")
