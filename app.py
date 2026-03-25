@@ -3,25 +3,11 @@ WEB-BASED 3-TIER 資料維護系統 - Streamlit 版
 Tier1: Streamlit UI  |  Tier2: Python 業務邏輯  |  Tier3: SQL Server
 """
 import streamlit as st
+import streamlit.components.v1 as components
 import pymssql
 import pandas as pd
 
 st.set_page_config(page_title="資料維護系統", layout="wide")
-
-# ── 全域樣式 ─────────────────────────────────────────────────
-st.markdown("""
-<style>
-/* 主選單卡片按鈕 */
-[data-testid="stMainBlockContainer"] .card-btn button {
-    height: 110px !important;
-    font-size: 17px !important;
-    font-weight: 600 !important;
-    white-space: pre-line !important;
-}
-/* 頁面標題列 */
-.page-header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
-</style>
-""", unsafe_allow_html=True)
 
 # ═══════════════════════════════════════════════════════════════
 # Tier 3 – Data Access Layer
@@ -108,33 +94,55 @@ def close_dlg():
 
 # ── 主選單 ───────────────────────────────────────────────────
 def page_main():
-    st.markdown("<h1 style='text-align:center;padding:32px 0 8px'>資料維護系統</h1>",
-                unsafe_allow_html=True)
-    st.markdown("<hr>", unsafe_allow_html=True)
+    # query param 導航（HTML card click 後觸發）
+    if "nav" in st.query_params:
+        dest = st.query_params["nav"]
+        st.query_params.clear()
+        nav(dest)
+        return
 
-    _, mid, _ = st.columns([1, 3, 1])
-    with mid:
-        c1, c2 = st.columns(2, gap="medium")
-        with c1:
-            with st.container():
-                st.markdown('<div class="card-btn">', unsafe_allow_html=True)
-                if st.button("👤  USER\n用戶資料維護", use_container_width=True, key="m_user"): nav("user")
-                st.markdown('</div>', unsafe_allow_html=True)
-            st.write("")
-            with st.container():
-                st.markdown('<div class="card-btn">', unsafe_allow_html=True)
-                if st.button("🏢  CUST\n客戶資料維護", use_container_width=True, key="m_cust"): nav("cust")
-                st.markdown('</div>', unsafe_allow_html=True)
-        with c2:
-            with st.container():
-                st.markdown('<div class="card-btn">', unsafe_allow_html=True)
-                if st.button("🏭  FACT\n廠商資料維護", use_container_width=True, key="m_fact"): nav("fact")
-                st.markdown('</div>', unsafe_allow_html=True)
-            st.write("")
-            with st.container():
-                st.markdown('<div class="card-btn">', unsafe_allow_html=True)
-                if st.button("📦  ITEM\n商品資料維護", use_container_width=True, key="m_item"): nav("item")
-                st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown(
+        "<h1 style='text-align:center;padding:40px 0 8px;font-size:2rem'>資料維護系統</h1>",
+        unsafe_allow_html=True,
+    )
+
+    components.html("""
+    <style>
+    *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
+    body{background:transparent}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:560px;margin:24px auto}
+    .card{background:#fff;border-radius:10px;padding:36px 20px 32px;text-align:center;
+          box-shadow:0 2px 8px rgba(0,0,0,.08);cursor:pointer;
+          transition:box-shadow .2s,transform .2s;border-top:5px solid}
+    .card:hover{box-shadow:0 8px 24px rgba(0,0,0,.14);transform:translateY(-4px)}
+    .card:active{transform:translateY(-1px)}
+    .icon{font-size:40px;margin-bottom:16px}
+    .en{font-size:13px;color:#999;letter-spacing:1px;font-weight:600;text-transform:uppercase}
+    .zh{font-size:17px;font-weight:700;color:#1a1a1a;margin-top:4px}
+    .u{border-top-color:#1677ff}.c{border-top-color:#52c41a}
+    .f{border-top-color:#fa8c16}.i{border-top-color:#722ed1}
+    </style>
+    <div class="grid">
+      <div class="card u" onclick="go('user')">
+        <div class="icon">👤</div><div class="en">USER</div><div class="zh">用戶資料維護</div>
+      </div>
+      <div class="card c" onclick="go('cust')">
+        <div class="icon">🏢</div><div class="en">CUST</div><div class="zh">客戶資料維護</div>
+      </div>
+      <div class="card f" onclick="go('fact')">
+        <div class="icon">🏭</div><div class="en">FACT</div><div class="zh">廠商資料維護</div>
+      </div>
+      <div class="card i" onclick="go('item')">
+        <div class="icon">📦</div><div class="en">ITEM</div><div class="zh">商品資料維護</div>
+      </div>
+    </div>
+    <script>
+    function go(p){
+      window.parent.location.href =
+        window.parent.location.pathname + '?nav=' + p;
+    }
+    </script>
+    """, height=380, scrolling=False)
 
 # ── 共用 CRUD 頁 ─────────────────────────────────────────────
 def crud_page(title, load_fn, pk_col,
